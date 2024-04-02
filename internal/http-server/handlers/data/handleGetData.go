@@ -10,8 +10,6 @@ import (
 	"github.com/paniccaaa/test-task-biocad/internal/storage/postgres"
 )
 
-type Request struct{}
-
 type Response struct {
 	ID    string `json:"id"`
 	Page  string `json:"page"`
@@ -33,6 +31,6 @@ func HandleGetData(log *slog.Logger, storage *postgres.PostgresStore) http.Handl
 
 		_ = log
 
-		render.JSON(w, r, Response{ID: unitGUID, Page: page, Limit: limit})
+		render.JSON(w, r, &Response{ID: unitGUID, Page: page, Limit: limit})
 	}
 }
