@@ -1,0 +1,5 @@
+package fileparser
+
+func FuncName() {
+
+}

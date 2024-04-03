@@ -11,6 +11,7 @@ import (
 
 	"github.com/paniccaaa/test-task-biocad/internal/config"
 	"github.com/paniccaaa/test-task-biocad/internal/lib/logger"
+	"github.com/paniccaaa/test-task-biocad/internal/lib/parsing"
 	"github.com/paniccaaa/test-task-biocad/internal/router"
 	"github.com/paniccaaa/test-task-biocad/internal/storage/postgres"
 )
@@ -33,6 +34,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer storage.Close()
+
 	router := router.InitRouter(log, storage)
 	log.Info("starting server", slog.String("address", config.Address))
 
@@ -53,6 +56,12 @@ func main() {
 		}
 	}()
 
+	go func() {
+		if err := parsing.Start(config, configDB, log); err != nil {
+			log.Error("failed to start scanning dir input_files: %w", err)
+		}
+	}()
+
 	log.Info("server started")
 
 	<-done
@@ -65,8 +74,6 @@ func main() {
 		log.Error("failed to stop server: %w", err)
 		return
 	}
-
-	defer storage.Close()
 
 	log.Info("server stopped")
 }
