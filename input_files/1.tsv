@@ -1,4 +1,4 @@
-n 	mqtt	invid   	unit_guid                           	msg_id                   	text               	context	class  	level	area 	addr                                 	block	type	bit	invert_bit
+﻿n 	mqtt	invid   	unit_guid                           	msg_id                   	text               	context	class  	level	area 	addr                                 	block	type	bit	invert_bit
 1 	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	cold7_Defrost_status     	Разморозка         	       	waiting	100  	LOCAL	cold7_status.Defrost_status				
 2 	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	cold7_VentSK_status      	Вентилятор         	       	working	100  	LOCAL	cold7_status.VentSK_status				
 3 	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	cold7_ComprSK_status     	Компрессор         	       	working	100  	LOCAL	cold7_status.ComprSK_status				
@@ -14,6 +14,6 @@ n 	mqtt	invid   	unit_guid                           	msg_id                   	
 13	    	G-044324	01749246-960c-5832-b2aa-ed2b4da5e137	cold2282a_RTempAir_Al_HH 	Высокая температура	       	alarm  	100  	LOCAL	cold2282a_right_status.TempAir_Al_HH				
 14	    	G-044324	01749246-960c-5832-b2aa-ed2b4da5e137	cold2282a_RCold_Status   	Охлаждение         	       	working	100  	LOCAL	cold2282a_right_status.Cold_Status				
 15	    	G-044324	01749246-960c-5832-b2aa-ed2b4da5e137	cold2282a_RVentSK_status 	Вентилятор         	       	working	100  	LOCAL	cold2282a_right_status.VentSK_status				
-16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_alarm                Тест Аларм                  alarm  	100  	LOCAL	TestingForMsg.Alarm				
-16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_warning              Тест Варнинг                warning	100  	LOCAL	TestingForMsg.Warning				
-16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_work                 Тест Ворк         	       	working	100  	LOCAL	TestingForMsg.Work				
+16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_alarm                                	Тест Аларм                                        	       	alarm  	100  	LOCAL	TestingForMsg.Alarm				
+16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_warning                              	Тест Варнинг                                      	       	warning	100  	LOCAL	TestingForMsg.Warning				
+16	    	G-044322	01749246-95f6-57db-b7c3-2ae0e8be671f	test_work                                 	Тест Ворк                                         	       	working	100  	LOCAL	TestingForMsg.Work				

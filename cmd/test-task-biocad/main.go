@@ -57,7 +57,7 @@ func main() {
 	}()
 
 	go func() {
-		if err := parsing.Start(config, configDB, log); err != nil {
+		if err := parsing.Start(config, log, storage); err != nil {
 			log.Error("failed to start scanning dir input_files: %w", err)
 		}
 	}()

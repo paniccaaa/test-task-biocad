@@ -1,19 +1,22 @@
 package dirscanner
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
 	"time"
 )
 
+type ScanTask struct {
+	FilePath string
+}
+
 type Scanner struct {
-	Queue   chan string
+	Queue   chan ScanTask
 	Log     *slog.Logger
 	DirPath string
 }
 
-func NewScanner(queue chan string, log *slog.Logger, dirPath string) *Scanner {
+func NewScanner(queue chan ScanTask, log *slog.Logger, dirPath string) *Scanner {
 	return &Scanner{
 		Queue:   queue,
 		Log:     log,
@@ -43,8 +46,9 @@ func (s *Scanner) scanDirectory() {
 		if entry.IsDir() {
 			continue
 		}
-
-		fmt.Print(entry.Name() + "\n")
-
+		filePath := s.DirPath + string(os.PathSeparator) + entry.Name()
+		task := ScanTask{FilePath: filePath}
+		s.Queue <- task
+		//fmt.Println(task) //{./input_files/1.tsv}
 	}
 }
