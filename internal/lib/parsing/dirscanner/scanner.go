@@ -24,6 +24,7 @@ type Scanner struct {
 func NewScanner(queue chan ScanTask, storage *postgres.PostgresStore, log *slog.Logger, dirPath string, ctx context.Context) *Scanner {
 	return &Scanner{
 		Queue:   queue,
+		Storage: storage,
 		Log:     log,
 		DirPath: dirPath,
 		Ctx:     ctx,
@@ -58,30 +59,26 @@ func (s *Scanner) scanDirectory() {
 
 		filePath := s.DirPath + string(os.PathSeparator) + entry.Name()
 
-		//without check from db
-		task := ScanTask{FilePath: filePath}
-		s.Queue <- task
+		id, err := s.Storage.GetFileByName(filePath)
+		if err != nil {
+			s.Log.Error("failed to get id: %w", err)
+		}
 
-		//with check from db
-		// id, err := s.Storage.GetFileByName(filePath)
-		// if err != nil {
-		// 	s.Log.Error("failed to get id: %w", err)
-		// }
-		// if id == -90 {
-		// 	tsvFile := &postgres.TSVFile{
-		// 		FileName: filePath,
-		// 	}
+		if id == -11 {
+			tsvFile := &postgres.TSVFile{
+				FileName: filePath,
+			}
 
-		// 	err := s.Storage.SaveFile(tsvFile)
-		// 	if err != nil {
-		// 		s.Log.Error("failed to save tsv_file to db", "err", err)
-		// 	}
+			err := s.Storage.SaveFile(tsvFile)
+			if err != nil {
+				s.Log.Error("failed to save tsv_file to db", "err", err)
+			}
 
-		// 	task := ScanTask{FilePath: filePath}
-		// 	s.Queue <- task
-		// } else {
-		// 	s.Log.Info("file already processed, skipping", slog.String("file", filePath))
-		// 	continue
-		// }
+			task := ScanTask{FilePath: filePath}
+			s.Queue <- task
+		} else if id != 11 {
+			s.Log.Info("file already processed, skipping", slog.String("file", filePath))
+			continue
+		}
 	}
 }

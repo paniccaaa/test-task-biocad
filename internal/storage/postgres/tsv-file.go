@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 )
 
@@ -25,32 +26,21 @@ func (p *PostgresStore) GetFileByName(fileName string) (int, error) {
 
 	err := p.db.QueryRow("SELECT id FROM tsv_files WHERE filename = $1;", fileName).Scan(&id)
 	if err != nil { //мы не нашли
-		return -90, err
+		if err == sql.ErrNoRows {
+			return -11, nil
+		}
+		return 0, err
 	}
 
 	return id, nil
 }
 
-func (p *PostgresStore) IsFileProceed(fileName string) bool {
-	// Здесь делаем запрос к базе данных, чтобы проверить, есть ли файл с таким именем и путем в таблице tsv_files
-	// Если файл уже обработан, возвращаем true, иначе false
-
-	var id int
-
-	err := p.db.QueryRow("SELECT id FROM tsv_files WHERE filename = $1;", fileName).Scan(&id)
-	if err != nil { //мы не нашли такой файл
-		return false //false
-	}
-
-	return true //true
-}
-
 func (p *PostgresStore) SaveFile(tsvFile *TSVFile) error {
 	const op = "postgres.SaveFile"
 
-	query := `INSERT INTO tsv_files (filename, error_messages) VALUES ($1, $2);`
+	query := `INSERT INTO tsv_files (filename) VALUES ($1);`
 
-	_, err := p.db.ExecContext(context.Background(), query, tsvFile.FileName, tsvFile.ErrorMessage)
+	_, err := p.db.Exec(query, tsvFile.FileName)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
