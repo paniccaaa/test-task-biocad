@@ -1,6 +1,7 @@
 package parsing
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/paniccaaa/test-task-biocad/internal/config"
@@ -14,38 +15,23 @@ type ScanTask struct {
 }
 
 func Start(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresStore) error {
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Инициализация очереди для обработки файлов
 	fileQueue := make(chan dirscanner.ScanTask)
 
 	// Инициализация фоновой задачи для сканирования директории
+	dirscan := dirscanner.NewScanner(fileQueue, storage, log, cfg.DirPath, ctx)
 	go func() {
-		dirscan := dirscanner.NewScanner(fileQueue, log, cfg.DirPath)
-		dirscan.Start()
+		dirscan.Start(ctx)
 	}()
 
 	// Создание механизма обработки файлов
 	fileProcessor := fileparser.NewParser(storage, fileQueue, log)
 
 	go fileProcessor.ProcessNext()
-
-	// // Создание механизма создания выходных файлов
-	// outputGenerator := outputgenerator.NewGenerator(config.OutputDir, storage, log)
-
-	// // Процесс обработки файлов
-	// go func() {
-	// 	for {
-	// 		fileProcessor.ProcessNext()
-	// 		time.Sleep(time.Second * 5) // Пауза между обработкой файлов
-	// 	}
-	// }()
-
-	// // Процесс создания выходных файлов
-	// go func() {
-	// 	for {
-	// 		outputGenerator.GenerateNext()
-	// 		time.Sleep(time.Second * 5) // Пауза между созданием выходных файлов
-	// 	}
-	// }()
 
 	return nil
 }

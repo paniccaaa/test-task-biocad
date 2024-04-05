@@ -32,13 +32,15 @@ func (p *Parser) ProcessNext() {
 	}
 }
 
-func (p *Parser) parseFile(filePath string) error {
+func (p *Parser) parseFile(fileName string) error {
 	const op = "lib.parsing.fileparser"
 
-	file, err := os.Open(filePath)
+	file, err := os.Open(fileName)
 	if err != nil {
 		return fmt.Errorf("%s: failed to open file: %w", op, err)
 	}
+
+	fmt.Println(fileName)
 
 	defer file.Close()
 
@@ -50,10 +52,22 @@ func (p *Parser) parseFile(filePath string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	tsvFileID, err := p.Storage.GetFileByName(fileName)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
 	for {
 		row, err := r.Read()
 		if err != nil {
-			return fmt.Errorf("%s: %w", op, err)
+			err := p.Storage.UpdateFile(fileName, fmt.Sprint(err))
+			if err != nil {
+				return fmt.Errorf("%s: %w", op, err)
+			}
+		}
+
+		if len(row) == 0 {
+			break
 		}
 
 		item := &postgres.DataItem{
@@ -72,13 +86,12 @@ func (p *Parser) parseFile(filePath string) error {
 			Type:      row[12],
 			Bit:       row[13],
 			InvertBit: row[14],
-			TSVFileID: 1, // Заполните это поле в соответствии с вашей логикой
+			TSVFileID: tsvFileID,
 		}
 
 		if err := p.Storage.SaveDataItem(item); err != nil {
 			return fmt.Errorf("%s: failed to save data item to db: %w", op, err)
 		}
-
 	}
-
+	return nil
 }
