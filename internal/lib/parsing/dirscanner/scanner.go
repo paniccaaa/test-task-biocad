@@ -46,7 +46,7 @@ func (s *Scanner) Start() {
 func (s *Scanner) scanDirectory() {
 	entries, err := os.ReadDir(s.InputPath)
 	if err != nil {
-		s.Log.Error("failed to read directory: %w", err)
+		s.Log.Error("failed to read input directory: %w", err)
 	}
 
 	for _, entry := range entries {
@@ -63,7 +63,8 @@ func (s *Scanner) scanDirectory() {
 
 		if id == -11 {
 			tsvFile := &postgres.TSVFile{
-				FileName: filePath,
+				FileName:     filePath,
+				ErrorMessage: "",
 			}
 
 			id, err := s.Storage.SaveFile(tsvFile)

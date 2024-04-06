@@ -1,12 +1,12 @@
 package parsing
 
 import (
-	"fmt"
 	"log/slog"
 
 	"github.com/paniccaaa/test-task-biocad/internal/config"
 	"github.com/paniccaaa/test-task-biocad/internal/lib/parsing/dirscanner"
 	"github.com/paniccaaa/test-task-biocad/internal/lib/parsing/fileparser"
+	"github.com/paniccaaa/test-task-biocad/internal/lib/parsing/generator"
 	"github.com/paniccaaa/test-task-biocad/internal/storage/postgres"
 )
 
@@ -15,32 +15,31 @@ type ScanTask struct {
 }
 
 func Start(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresStore) error {
-	// Инициализация очереди для обработки файлов
+	// chan for queue
 	fileQueue := make(chan dirscanner.ScanTask)
 
-	// Инициализация фоновой задачи для сканирования директории
-	dirscan := dirscanner.NewScanner(fileQueue, storage, log, cfg.InputPath)
+	// goroutine for start scan dir
 	go func() {
+		dirscan := dirscanner.NewScanner(fileQueue, storage, log, cfg.InputPath)
 		dirscan.Start()
 	}()
 
-	// Создание механизма обработки файлов
-	fileProcessor := fileparser.NewParser(storage, fileQueue, log)
-
+	// goroutine for parsing files
 	go func() {
+		fileProcessor := fileparser.NewParser(storage, fileQueue, log)
 		fileProcessor.ProcessNext()
 	}()
 
-	scanTask := <-fileQueue
+	// goroutine
+	go func() {
+		generator := generator.NewGenerator(log, cfg.OutputPath, storage)
+		generator.Start()
+	}()
 
-	_ = scanTask
-	fmt.Println("parsing", scanTask.FilePath, scanTask.FileID)
+	// scanTask := <-fileQueue
 
-	// tsvFile, err := storage.GetTSVFileByID(scanTask.FileID)
-	// if err != nil {
-	// 	return err
-	// }
+	// _ = scanTask
+	// fmt.Println("parsing", scanTask.FilePath, scanTask.FileID)
 
-	// fmt.Println(tsvFile)
 	return nil
 }

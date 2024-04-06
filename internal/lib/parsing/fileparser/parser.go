@@ -48,6 +48,7 @@ func (p *Parser) parseFile(fileName string) error {
 	r := csv.NewReader(file)
 	r.Comma = '\t'
 
+	// skip header row
 	_, err = r.Read()
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)

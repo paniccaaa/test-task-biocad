@@ -27,7 +27,8 @@ type DataItem struct {
 
 type IData interface {
 	SaveDataItem(item *DataItem) error
-	GetDataByName(tsvFileID int)
+	GetUniqueUnitGUID() ([]string, error)
+	GetDataByUnitGUID(unitGUID int) ([]*DataItem, error)
 }
 
 func (p *PostgresStore) SaveDataItem(item *DataItem) error {
@@ -49,15 +50,50 @@ func (p *PostgresStore) SaveDataItem(item *DataItem) error {
 	return nil
 }
 
-func (p *PostgresStore) GetDataByName(tsvFileID int) (*DataItem, error) {
-	const op = "storage.postgres.GetFileByName"
-	d := &DataItem{}
+func (p *PostgresStore) GetUniqueUnitGUID() ([]string, error) {
+	const op = "storage.postgres.SaveDataItem"
 
-	row := p.db.QueryRow("SELECT * FROM data WHERE tsv_file_id = $1;", tsvFileID)
-	if err := row.Scan(&d.ID, &d.N, &d.MQTT, &d.Invid, &d.UnitGUID, &d.MsgID, &d.Text, &d.Context, &d.Class,
-		&d.Level, &d.Area, &d.Addr, &d.Block, &d.Type, &d.Bit, &d.InvertBit, &d.TSVFileID); err != nil {
+	query := `SELECT DISTINCT unit_guid FROM data`
+	sliceOfUnitGUID := []string{}
+
+	rows, err := p.db.Query(query)
+	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return d, nil
+	defer rows.Close()
+
+	for rows.Next() {
+		var unitGUID string
+
+		if err := rows.Scan(&unitGUID); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		sliceOfUnitGUID = append(sliceOfUnitGUID, unitGUID)
+	}
+
+	return sliceOfUnitGUID, nil
+}
+
+func (p *PostgresStore) GetDataByUnitGUID(unitGUID int) ([]*DataItem, error) {
+	const op = "storage.postgres.GetFileByName"
+	data := []*DataItem{}
+
+	rows, err := p.db.Query("SELECT * FROM data WHERE unit_guid = $1", unitGUID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var d DataItem
+		if err := rows.Scan(&d.ID, &d.N, &d.MQTT, &d.Invid, &d.UnitGUID, &d.MsgID, &d.Text, &d.Context, &d.Class,
+			&d.Level, &d.Area, &d.Addr, &d.Block, &d.Type, &d.Bit, &d.InvertBit, &d.TSVFileID); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+		data = append(data, &d)
+	}
+	return data, nil
 }
