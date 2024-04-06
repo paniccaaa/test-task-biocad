@@ -13,43 +13,56 @@ type TSVFile struct {
 }
 
 type ITSVFile interface {
-	GetFileByName(fileName string) (int, error)
-	IsFileProceed(fileName string) bool
+	GetFileIDByName(fileName string) (int, error)
 	SaveFile(tsvFile *TSVFile) error
+	GetTSVFileByID(tsvFileID int) (*TSVFile, error)
 	UpdateFile(fileName, errMessage string) error
 }
 
-func (p *PostgresStore) GetFileByName(fileName string) (int, error) {
-	// Здесь делаем запрос к базе данных, чтобы получить идентификатор файла по его имени
-	// Возвращаем идентификатор файла
+func (p *PostgresStore) GetFileIDByName(fileName string) (int, error) {
+	const op = "storage.postgres.GetFileIDByName"
 	var id int
 
 	err := p.db.QueryRow("SELECT id FROM tsv_files WHERE filename = $1;", fileName).Scan(&id)
-	if err != nil { //мы не нашли
+	// if not found
+	if err != nil {
 		if err == sql.ErrNoRows {
 			return -11, nil
 		}
-		return 0, err
+		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return id, nil
 }
 
-func (p *PostgresStore) SaveFile(tsvFile *TSVFile) error {
-	const op = "postgres.SaveFile"
+func (p *PostgresStore) GetTSVFileByID(tsvFileID int) (*TSVFile, error) {
+	const op = "storage.postgres.GetTSVFileByID"
+	tf := &TSVFile{}
 
-	query := `INSERT INTO tsv_files (filename) VALUES ($1);`
-
-	_, err := p.db.Exec(query, tsvFile.FileName)
-	if err != nil {
-		return fmt.Errorf("%s: %w", op, err)
+	row := p.db.QueryRow("SELECT * FROM tsv_files WHERE id = $1;", tsvFileID)
+	if err := row.Scan(tf.ID, tf.FileName, tf.ErrorMessage); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return nil
+	return tf, nil
+}
+
+func (p *PostgresStore) SaveFile(tsvFile *TSVFile) (int, error) {
+	const op = "storage.postgres.SaveFile"
+
+	query := `INSERT INTO tsv_files (filename) VALUES ($1) RETURNING id;`
+
+	var id int
+	err := p.db.QueryRow(query, tsvFile.FileName).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return id, nil
 }
 
 func (p *PostgresStore) UpdateFile(fileName, errMessage string) error {
-	const op = "postgres.UpdateFile"
+	const op = "storage.postgres.UpdateFile"
 
 	query := `update tsv_files set error_message = $1 where filename = $2`
 

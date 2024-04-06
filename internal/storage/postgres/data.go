@@ -6,6 +6,7 @@ import (
 )
 
 type DataItem struct {
+	ID        int    `json:"id"`
 	N         string `json:"n"`
 	MQTT      string `json:"mqtt"`
 	Invid     string `json:"invid"`
@@ -26,10 +27,11 @@ type DataItem struct {
 
 type IData interface {
 	SaveDataItem(item *DataItem) error
+	GetDataByName(tsvFileID int)
 }
 
 func (p *PostgresStore) SaveDataItem(item *DataItem) error {
-	const op = "postgres.SaveDataItem"
+	const op = "storage.postgres.SaveDataItem"
 
 	query := `INSERT INTO data (n, mqtt, invid, unit_guid, msg_id, text,
 															context, class, level, area, addr, block,
@@ -45,4 +47,17 @@ func (p *PostgresStore) SaveDataItem(item *DataItem) error {
 	}
 
 	return nil
+}
+
+func (p *PostgresStore) GetDataByName(tsvFileID int) (*DataItem, error) {
+	const op = "storage.postgres.GetFileByName"
+	d := &DataItem{}
+
+	row := p.db.QueryRow("SELECT * FROM data WHERE tsv_file_id = $1;", tsvFileID)
+	if err := row.Scan(&d.ID, &d.N, &d.MQTT, &d.Invid, &d.UnitGUID, &d.MsgID, &d.Text, &d.Context, &d.Class,
+		&d.Level, &d.Area, &d.Addr, &d.Block, &d.Type, &d.Bit, &d.InvertBit, &d.TSVFileID); err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return d, nil
 }

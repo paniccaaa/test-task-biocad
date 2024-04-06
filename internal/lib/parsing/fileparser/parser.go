@@ -26,7 +26,8 @@ func NewParser(storage *postgres.PostgresStore, queue chan dirscanner.ScanTask, 
 
 func (p *Parser) ProcessNext() {
 	for task := range p.Queue {
-		if err := p.parseFile(task.FilePath); err != nil {
+		err := p.parseFile(task.FilePath)
+		if err != nil {
 			p.Log.Error("failed to parse file", slog.String("file", task.FilePath), slog.String("err", fmt.Sprint(err)))
 		}
 	}
@@ -52,7 +53,7 @@ func (p *Parser) parseFile(fileName string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	tsvFileID, err := p.Storage.GetFileByName(fileName)
+	tsvFileID, err := p.Storage.GetFileIDByName(fileName)
 	if err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}

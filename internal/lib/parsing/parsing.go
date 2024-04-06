@@ -1,7 +1,7 @@
 package parsing
 
 import (
-	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/paniccaaa/test-task-biocad/internal/config"
@@ -15,23 +15,32 @@ type ScanTask struct {
 }
 
 func Start(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresStore) error {
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	// Инициализация очереди для обработки файлов
 	fileQueue := make(chan dirscanner.ScanTask)
 
 	// Инициализация фоновой задачи для сканирования директории
-	dirscan := dirscanner.NewScanner(fileQueue, storage, log, cfg.DirPath, ctx)
+	dirscan := dirscanner.NewScanner(fileQueue, storage, log, cfg.InputPath)
 	go func() {
-		dirscan.Start(ctx)
+		dirscan.Start()
 	}()
 
 	// Создание механизма обработки файлов
 	fileProcessor := fileparser.NewParser(storage, fileQueue, log)
 
-	go fileProcessor.ProcessNext()
+	go func() {
+		fileProcessor.ProcessNext()
+	}()
 
+	scanTask := <-fileQueue
+
+	_ = scanTask
+	fmt.Println("parsing", scanTask.FilePath, scanTask.FileID)
+
+	// tsvFile, err := storage.GetTSVFileByID(scanTask.FileID)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// fmt.Println(tsvFile)
 	return nil
 }
