@@ -15,7 +15,7 @@ type TSVFile struct {
 type ITSVFile interface {
 	GetFileIDByName(fileName string) (int, error)
 	SaveFile(tsvFile *TSVFile) error
-	//GetTSVFileByID(tsvFileID int) (*TSVFile, error)
+	GetTSVFileByID(tsvFileID int) (*TSVFile, error)
 	UpdateFile(fileName, errMessage string) error
 }
 
@@ -24,7 +24,7 @@ func (p *PostgresStore) GetFileIDByName(fileName string) (int, error) {
 	var id int
 
 	err := p.db.QueryRow("SELECT id FROM tsv_files WHERE filename = $1;", fileName).Scan(&id)
-	// if not found
+	// if not exists
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return -11, nil
@@ -41,7 +41,6 @@ func (p *PostgresStore) GetTSVFileByID(tsvFileID int) (*TSVFile, error) {
 
 	row := p.db.QueryRow("SELECT * FROM tsv_files WHERE id = $1;", tsvFileID)
 	if err := row.Scan(&tf.ID, &tf.FileName, &tf.ErrorMessage); err != nil {
-		fmt.Println("Ошибка сканирования строки:", err)
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 

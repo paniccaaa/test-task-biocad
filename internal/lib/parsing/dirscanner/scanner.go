@@ -30,9 +30,9 @@ func NewScanner(queue chan ScanTask, storage *postgres.PostgresStore, log *slog.
 }
 
 func (s *Scanner) Start() {
-	ticker := time.NewTicker(5 * time.Second) // Создаем таймер с интервалом 30 секунд
+	ticker := time.NewTicker(5 * time.Second)
 
-	defer ticker.Stop() // Обязательно останавливаем таймер перед выходом из функции
+	defer ticker.Stop()
 
 	for {
 		select {
@@ -46,7 +46,7 @@ func (s *Scanner) Start() {
 func (s *Scanner) scanDirectory() {
 	entries, err := os.ReadDir(s.InputPath)
 	if err != nil {
-		s.Log.Error("failed to read input directory: %w", err)
+		s.Log.Error("failed to read input directory", slog.String("err", err.Error()))
 	}
 
 	for _, entry := range entries {
@@ -58,7 +58,7 @@ func (s *Scanner) scanDirectory() {
 
 		id, err := s.Storage.GetFileIDByName(filePath)
 		if err != nil {
-			s.Log.Error("failed to get id: %w", err)
+			s.Log.Error("failed to get id", slog.String("err", err.Error()))
 		}
 
 		if id == -11 {
@@ -69,7 +69,7 @@ func (s *Scanner) scanDirectory() {
 
 			id, err := s.Storage.SaveFile(tsvFile)
 			if err != nil {
-				s.Log.Error("failed to save tsv_file to db", "err", err)
+				s.Log.Error("failed to save tsv_file to db", slog.String("err", err.Error()))
 			}
 
 			task := ScanTask{

@@ -28,7 +28,7 @@ func (p *Parser) Start() {
 	for task := range p.Queue {
 		err := p.parseFile(task.FilePath)
 		if err != nil {
-			p.Log.Error("failed to parse file", slog.String("file", task.FilePath), slog.String("err", fmt.Sprint(err)))
+			p.Log.Error("failed to parse file", slog.String("file", task.FilePath), slog.String("err", err.Error()))
 		}
 	}
 }
@@ -38,10 +38,8 @@ func (p *Parser) parseFile(fileName string) error {
 
 	file, err := os.Open(fileName)
 	if err != nil {
-		return fmt.Errorf("%s: failed to open file: %w", op, err)
+		return fmt.Errorf("%s: %w", op, err)
 	}
-
-	fmt.Println(fileName)
 
 	defer file.Close()
 
@@ -92,7 +90,7 @@ func (p *Parser) parseFile(fileName string) error {
 		}
 
 		if err := p.Storage.SaveDataItem(item); err != nil {
-			return fmt.Errorf("%s: failed to save data item to db: %w", op, err)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 	}
 	return nil

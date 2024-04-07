@@ -89,11 +89,14 @@ func (p *PostgresStore) GetDataByUnitGUID(unitGUID string) ([]*DataItem, error) 
 
 	for rows.Next() {
 		var d DataItem
+
 		if err := rows.Scan(&d.ID, &d.N, &d.MQTT, &d.Invid, &d.UnitGUID, &d.MsgID, &d.Text, &d.Context, &d.Class,
 			&d.Level, &d.Area, &d.Addr, &d.Block, &d.Type, &d.Bit, &d.InvertBit, &d.TSVFileID); err != nil {
 			return nil, fmt.Errorf("%s: %w", op, err)
 		}
+
 		data = append(data, &d)
 	}
+
 	return data, nil
 }
