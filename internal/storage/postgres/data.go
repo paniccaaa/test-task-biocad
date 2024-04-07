@@ -29,6 +29,7 @@ type IData interface {
 	SaveDataItem(item *DataItem) error
 	GetUniqueUnitGUID() ([]string, error)
 	GetDataByUnitGUID(unitGUID int) ([]*DataItem, error)
+	GetDataByUnitGUIDWithPagination(unitGUID, limit, offset string) ([]*DataItem, error)
 }
 
 func (p *PostgresStore) SaveDataItem(item *DataItem) error {
@@ -81,6 +82,32 @@ func (p *PostgresStore) GetDataByUnitGUID(unitGUID string) ([]*DataItem, error) 
 	data := []*DataItem{}
 
 	rows, err := p.db.Query("SELECT * FROM data WHERE unit_guid = $1", unitGUID)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var d DataItem
+
+		if err := rows.Scan(&d.ID, &d.N, &d.MQTT, &d.Invid, &d.UnitGUID, &d.MsgID, &d.Text, &d.Context, &d.Class,
+			&d.Level, &d.Area, &d.Addr, &d.Block, &d.Type, &d.Bit, &d.InvertBit, &d.TSVFileID); err != nil {
+			return nil, fmt.Errorf("%s: %w", op, err)
+		}
+
+		data = append(data, &d)
+	}
+
+	return data, nil
+}
+
+func (p *PostgresStore) GetDataByUnitGUIDWithPagination(unitGUID string, limit, offset int) ([]*DataItem, error) {
+	const op = "storage.postgres.GetDataByUnitGUIDWithPagination"
+	data := []*DataItem{}
+
+	query := "SELECT * FROM data WHERE unit_guid = $1 LIMIT $2 OFFSET $3"
+	rows, err := p.db.Query(query, unitGUID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}

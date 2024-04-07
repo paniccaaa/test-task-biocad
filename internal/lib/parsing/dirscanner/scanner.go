@@ -30,7 +30,7 @@ func NewScanner(queue chan ScanTask, storage *postgres.PostgresStore, log *slog.
 }
 
 func (s *Scanner) Start() {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(20 * time.Second) //5
 
 	defer ticker.Stop()
 

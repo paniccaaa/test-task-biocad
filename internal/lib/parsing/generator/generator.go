@@ -26,7 +26,7 @@ func NewGenerator(log *slog.Logger, outputPath string, storage *postgres.Postgre
 }
 
 func (g *Generator) Start() {
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 
 	defer ticker.Stop()
 

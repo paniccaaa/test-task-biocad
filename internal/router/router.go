@@ -22,7 +22,7 @@ func InitRouter(log *slog.Logger, storage *postgres.PostgresStore) http.Handler 
 	router.Use(render.SetContentType(render.ContentTypeJSON))
 
 	router.Route("/data/{unit_guid}", func(r chi.Router) {
-		r.Get("/", data.HandleGetData(log, storage))
+		r.Get("/", data.HandleGetDataByID(log, storage))
 	})
 
 	return router
