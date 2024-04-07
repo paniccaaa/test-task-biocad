@@ -1,12 +1,14 @@
 package generator
 
 import (
-	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/paniccaaa/test-task-biocad/internal/storage/postgres"
+	"github.com/signintech/gopdf"
 )
 
 type Generator struct {
@@ -24,79 +26,115 @@ func NewGenerator(log *slog.Logger, outputPath string, storage *postgres.Postgre
 }
 
 func (g *Generator) Start() {
-	ticker := time.NewTicker(10 * time.Second) // Создаем таймер с интервалом 30 секунд
+	ticker := time.NewTicker(10 * time.Second)
 
-	defer ticker.Stop() // Обязательно останавливаем таймер перед выходом из функции
+	defer ticker.Stop()
 
 	for {
 		select {
-
 		case <-ticker.C:
-			g.ScanDirectory()
+			g.scanDirectory()
 		}
 	}
 }
 
-func (g *Generator) CheckDB() {
+func (g *Generator) scanDirectory() {
+
 	unitsGUID, err := g.Storage.GetUniqueUnitGUID()
 	if err != nil {
-		fmt.Errorf("failed to get unique unit guid %w", err)
+		g.Log.Error("failed to get slice of unit guid", slog.String("err", err.Error()))
+		return
 	}
 
-	fmt.Println(unitsGUID)
+	for _, unitGUID := range unitsGUID {
 
-	// for i, v := range unitsGUID {
+		pdfFilePath := filepath.Join(g.OutputPath, unitGUID+".pdf")
 
-	// }
-}
-
-func (g *Generator) ScanDirectory() {
-
-	g.CheckDB()
-
-	entries, err := os.ReadDir(g.OutputPath)
-	if err != nil {
-		g.Log.Error("failed to read output directory: %w", err)
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
+		if _, err := os.Stat(pdfFilePath); err == nil {
+			g.Log.Info("PDF file already exists, skipping", slog.String("file", pdfFilePath))
 			continue
 		}
 
-		fmt.Println("hello from generator", entry.Name())
+		dataItems, err := g.Storage.GetDataByUnitGUID(unitGUID)
+		if err != nil {
+			g.Log.Error("failed to get data by unit_guid", slog.String("err", err.Error()))
+			continue
+		}
 
-		// filePath := g.OutputPath + string(os.PathSeparator) + entry.Name()
+		// 1 request to db (only for optimization)
+		tsvFile, err := g.Storage.GetTSVFileByID(dataItems[0].TSVFileID)
+		if err != nil {
+			g.Log.Error("failed to get tsvFile by id", slog.String("err", err.Error()))
+			continue
+		}
 
-		// id, err := g.Storage.GetFileIDByName(filePath)
-		// if err != nil {
-		// 	g.Log.Error("failed to get id: %w", err)
-		// }
+		err = g.createPDF(unitGUID, dataItems, tsvFile)
+		if err != nil {
+			g.Log.Error("failed to create pdf", slog.String("err", err.Error()))
+		}
 
-		// if id == -11 {
-		// 	tsvFile := &postgres.TSVFile{
-		// 		FileName:     filePath,
-		// 		ErrorMessage: "",
-		// 	}
-
-		// 	id, err := s.Storage.SaveFile(tsvFile)
-		// 	if err != nil {
-		// 		s.Log.Error("failed to save tsv_file to db", "err", err)
-		// 	}
-
-		// 	task := ScanTask{
-		// 		FilePath: filePath,
-		// 		FileID:   id,
-		// 	}
-		// 	s.Queue <- task
-
-		// } else if id != 11 {
-		// 	s.Log.Info("file already processed, skipping", slog.String("file", filePath))
-		// 	continue
-		// }
 	}
 }
 
-func CreatePDF() {
+func (g *Generator) createPDF(unitGUID string, dataItems []*postgres.DataItem, tf *postgres.TSVFile) error {
+	pdf := gopdf.GoPdf{}
 
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+
+	pdf.AddPage()
+
+	err := pdf.AddTTFFont("Roboto", "./ttf/Roboto-Black.ttf")
+	if err != nil {
+		return err
+	}
+
+	err = pdf.SetFont("Roboto", "", 14)
+	if err != nil {
+		return err
+	}
+
+	for _, d := range dataItems {
+
+		properties := []string{
+			"ID: " + strconv.Itoa(d.ID),
+			"N: " + d.N,
+			"MQTT: " + d.MQTT,
+			"Invid: " + d.Invid,
+			"Unit_GUID: " + d.UnitGUID,
+			"MsgID: " + d.MsgID,
+			"Text: " + d.Text,
+			"Context: " + d.Context,
+			"Class: " + d.Class,
+			"Level: " + d.Level,
+			"Area: " + d.Area,
+			"Addr: " + d.Addr,
+			"Block: " + d.Block,
+			"Type: " + d.Type,
+			"Bit: " + d.Bit,
+			"InvertBit: " + d.InvertBit,
+		}
+
+		for _, prop := range properties {
+			pdf.Cell(nil, prop)
+			pdf.Br(20)
+		}
+		pdf.Br(20)
+
+		pdf.AddPage()
+	}
+
+	pdf.Br(30)
+	pdf.Cell(nil, "TSV File ID: "+strconv.Itoa(tf.ID))
+	pdf.Br(20)
+	pdf.Cell(nil, "TSV File Name: "+tf.FileName)
+	pdf.Br(20)
+	pdf.Cell(nil, "TSV File Error Message: "+tf.ErrorMessage)
+
+	pdfFilePath := filepath.Join(g.OutputPath, unitGUID+".pdf")
+	err = pdf.WritePdf(pdfFilePath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

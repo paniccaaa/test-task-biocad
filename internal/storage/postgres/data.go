@@ -76,7 +76,7 @@ func (p *PostgresStore) GetUniqueUnitGUID() ([]string, error) {
 	return sliceOfUnitGUID, nil
 }
 
-func (p *PostgresStore) GetDataByUnitGUID(unitGUID int) ([]*DataItem, error) {
+func (p *PostgresStore) GetDataByUnitGUID(unitGUID string) ([]*DataItem, error) {
 	const op = "storage.postgres.GetFileByName"
 	data := []*DataItem{}
 

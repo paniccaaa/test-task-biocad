@@ -24,7 +24,7 @@ func NewParser(storage *postgres.PostgresStore, queue chan dirscanner.ScanTask, 
 	}
 }
 
-func (p *Parser) ProcessNext() {
+func (p *Parser) Start() {
 	for task := range p.Queue {
 		err := p.parseFile(task.FilePath)
 		if err != nil {

@@ -27,19 +27,14 @@ func Start(cfg *config.Config, log *slog.Logger, storage *postgres.PostgresStore
 	// goroutine for parsing files
 	go func() {
 		fileProcessor := fileparser.NewParser(storage, fileQueue, log)
-		fileProcessor.ProcessNext()
+		fileProcessor.Start()
 	}()
 
-	// goroutine
+	// goroutine for creating pdf
 	go func() {
 		generator := generator.NewGenerator(log, cfg.OutputPath, storage)
 		generator.Start()
 	}()
-
-	// scanTask := <-fileQueue
-
-	// _ = scanTask
-	// fmt.Println("parsing", scanTask.FilePath, scanTask.FileID)
 
 	return nil
 }
